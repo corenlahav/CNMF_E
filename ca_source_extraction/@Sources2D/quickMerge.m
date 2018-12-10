@@ -22,21 +22,34 @@ end
 C_raw = obj.C_raw;
 C = obj.C;
 
-if ~exist('merge_thr', 'var') || isempty(merge_thr) || numel(merge_thr)~=3
-    merge_thr = [1e-6, 0.7, 0];
+if ~exist('merge_thr', 'var') || isempty(merge_thr) || numel(merge_thr)~=5
+    merge_thr = [1e-1, 0.75, 0, 0.85, 0.5];
 end
 A_thr = merge_thr(1);
 C_thr = merge_thr(2);
 S_thr = merge_thr(3);
+A_high_thr = merge_thr(4);
+IntensityThreshold = merge_thr(5);
 [K, ~] = size(C);   % number of neurons
 deconv_options_0 = obj.options.deconv_options;
 
 %% find neuron pairs to merge
 % compute spatial correlation
-% temp = bsxfun(@times, A, 1./sum(A.^2,1));
-temp = bsxfun(@times, A>0, 1./sqrt(sum(A>0)));
-A_overlap = temp'*temp;
+%temp = bsxfun(@times, A>0, 1./sqrt(sum(A>0)));
 
+% Normalized spatial footprint of each component to its maximal intensity
+temp = bsxfun(@rdivide,A,max(A,[],1));
+
+% Exclude pixels with intensity lower than threshold
+temp = temp.*(temp>=IntensityThreshold);
+
+% Normalize overlap value to component size (due to this next calculation
+% will result in a value between 0 and 1)
+temp = bsxfun(@times, temp>0, 1./sqrt(sum(temp>0)));
+
+% Calculate overlap
+A_overlap = temp'*temp;
+A_overlap = A_overlap - diag(diag(A_overlap));
 % compute temporal correlation
 if ~exist('X', 'var')|| isempty(X)
     X = 'C';
@@ -58,16 +71,18 @@ C_corr = corr(C')-eye(K);
 
 %% using merging criterion to detect paired neurons
 flag_merge = (A_overlap>A_thr)&(C_corr>C_thr)&(S_corr>S_thr);
-if length(merge_thr)>3
-    max_decay_diff = merge_thr(4); 
-     taud = zeros(K, 1);
-     for m=1:K
-         temp = ar2exp(obj.P.kernel_pars(m));
-         taud(m) = temp(1);
-     end
-     decay_diff = abs(bsxfun(@minus, taud, taud'));
-     flag_merge = flag_merge & (decay_diff<max_decay_diff); 
-end
+flag_merge = (flag_merge | (A_overlap > A_high_thr));  %% ADDED BY COREN
+% Commented out by Coren
+% if length(merge_thr)>3
+%     max_decay_diff = merge_thr(4); 
+%      taud = zeros(K, 1);
+%      for m=1:K
+%          temp = ar2exp(obj.P.kernel_pars(m));
+%          taud(m) = temp(1);
+%      end
+%      decay_diff = abs(bsxfun(@minus, taud, taud'));
+%      flag_merge = flag_merge & (decay_diff<max_decay_diff); 
+% end
 [l,c] = graph_connected_comp(sparse(flag_merge));     % extract connected components
 
 MC = bsxfun(@eq, reshape(l, [],1), 1:c);
