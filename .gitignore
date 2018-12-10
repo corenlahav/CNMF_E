@@ -1,6 +1,5 @@
 *.mat
 cvx/
-*.asv
 *.avi
 *.m~
 demos.xml

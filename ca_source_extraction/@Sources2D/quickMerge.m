@@ -14,7 +14,7 @@ function  [merged_ROIs, newIDs] = quickMerge(obj, merge_thr)
 %  correlation + spatial overlap
 %  reference: Pnevmatikakis et.al.(2016). Simultaneous Denoising, Deconvolution, and Demixing of Calcium Imaging Data. Neuron
 %% Update by Coren: Added threshold for including pixels in spatial component (merge_thr(5)) and exclusion based exclusively on spatial correlation (merge_thr(4))
-a
+
 %% variables & parameters
 A = obj.A;          % spatial components
 if isempty(obj.C_raw)
