@@ -4,6 +4,7 @@ function  [merged_ROIs, newIDs] = quickMerge(obj, merge_thr)
 %   merge_thr: 1X3 vector, threshold for three metrics {'C', 'S', 'A'}, it merge neurons based
 %   on correlations of spatial shapes ('A'),  calcium traces ('C') and  spike counts ('S').
 
+% dgfdsf
 % output:
 %   merged_ROIs: cell arrarys, each element contains indices of merged
 %   components
